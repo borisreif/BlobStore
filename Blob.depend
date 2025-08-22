@@ -1,0 +1,22 @@
+# depslib dependency file v1.0
+1755893349 source:/home/boris-a-reif/Dokumente/C++/Blob/src/BlobStore.cpp
+	"BlobStore.h"
+	<fstream>
+	<iomanip>
+	<sstream>
+	<random>
+	<stdexcept>
+	<cctype>
+	<openssl/sha.h>
+
+1755893328 /home/boris-a-reif/Dokumente/C++/Blob/include/BlobStore.h
+	<string>
+	<vector>
+	<optional>
+	<filesystem>
+	<cstdint>
+
+1755893932 source:/home/boris-a-reif/Dokumente/C++/Blob/main.cpp
+	"BlobStore.h"
+	<iostream>
+
