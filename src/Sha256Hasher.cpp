@@ -1,4 +1,4 @@
-#include "Sha256Hasher.h"
+#include "../include/Sha256Hasher.h"
 
 #include <algorithm>
 #include <cstring>

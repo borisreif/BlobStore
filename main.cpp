@@ -1,18 +1,20 @@
-#include "BlobStore.h"
+#include "include/BlobStore.h"
 
 #include <filesystem>
 #include <iostream>
-#include <stdexcept>
+#include <exception>
 #include <string>
 
 int main(int argc, char* argv[]) {
     try {
         namespace fs = std::filesystem;
 
-        const fs::path inputPath = argc > 1 ? fs::path(argv[1]) : fs::path("test_file.pdf");
-        const fs::path outputPath = argc > 2 ? fs::path(argv[2]) : fs::path("out/report_copy.pdf");
+        fs::path inputPath{"test_file.pdf"};
+        fs::path outputPath{"out/report_copy.pdf"};
+        if (argc > 1) inputPath = fs::path{std::string{argv[1]}};
+        if (argc > 2) outputPath = fs::path{std::string{argv[2]}};
 
-        blobdb::BlobStore store("data_root");
+        blobdb::BlobStore store{fs::path{"data_root"}};
 
         std::cout << "Current working directory: " << fs::current_path() << '\n';
         std::cout << "Input file: " << inputPath << '\n';

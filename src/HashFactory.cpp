@@ -1,7 +1,7 @@
-#include "HashFactory.h"
+#include "../include/HashFactory.h"
 
-#include "IHasher.h"
-#include "Sha256Hasher.h"
+#include "../include/IHasher.h"
+#include "../include/Sha256Hasher.h"
 
 #include <algorithm>
 #include <cctype>

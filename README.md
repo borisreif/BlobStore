@@ -38,6 +38,17 @@ cmake --build build
 ./build/blob test_file.pdf out/report_copy.pdf
 ```
 
+## About VS Code "Problems"
+
+If the terminal build succeeds but VS Code shows many red squiggles, that usually means the editor language server is not using the same include paths or C++ standard as CMake. This project now includes:
+
+- `.vscode/settings.json` for the Microsoft C/C++ extension.
+- `.vscode/c_cpp_properties.json` with C++17 and `include/` paths.
+- `.clangd` for users who have the clangd extension installed.
+- `CMAKE_EXPORT_COMPILE_COMMANDS ON`, so CMake creates `build/compile_commands.json` after the first configure.
+
+After opening the folder, run **C/C++: Reset IntelliSense Database** or **clangd: Restart language server** if old diagnostics remain. Make sure the folder opened in VS Code is the project root containing `CMakeLists.txt`, not the parent folder above it.
+
 ## Build and run from VS Code
 
 1. Open this folder in VS Code: `Blob_fixed/`.
