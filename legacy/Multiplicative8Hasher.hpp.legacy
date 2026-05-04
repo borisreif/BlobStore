@@ -1,0 +1,38 @@
+#pragma once
+
+#include "IHasher.hpp"
+
+#include <cstdint>
+#include <string>
+
+namespace hashing {
+
+class Multiplicative8Hasher final : public IHasher {
+public:
+    Multiplicative8Hasher(
+        std::uint8_t seed = 37,
+        std::uint8_t multiplier = 131
+    );
+
+    const std::string& algorithm() const override;
+
+    void update(std::span<const std::uint8_t> data) override;
+
+    std::string finalHex() override;
+
+    void reset();
+
+private:
+    std::uint8_t seed_;
+    std::uint8_t multiplier_;
+    std::uint8_t state_;
+
+    std::string algorithm_;
+};
+
+HasherFactory makeMultiplicative8Factory(
+    std::uint8_t seed = 37,
+    std::uint8_t multiplier = 131
+);
+
+} // namespace hashing

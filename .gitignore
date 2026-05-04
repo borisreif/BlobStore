@@ -8,3 +8,7 @@ out/
 *.dll
 *.so
 *.dylib
+project.json
+settings.json
+.vscode/
+node_modules/

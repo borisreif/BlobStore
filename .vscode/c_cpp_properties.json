@@ -3,20 +3,20 @@
     {
       "name": "linux-gcc-x64",
       "includePath": [
-        "${workspaceFolder}/include",
+        // "${workspaceFolder}/include",
         "${workspaceFolder}/src"
       ],
       "browse": {
         "path": [
-          "${workspaceFolder}/include",
+          // "${workspaceFolder}/include",
           "${workspaceFolder}/src"
         ],
         "limitSymbolsToIncludedHeaders": true
       },
       "compilerPath": "/usr/bin/g++",
       "compileCommands": "${workspaceFolder}/build/compile_commands.json",
-      "cStandard": "c17",
-      "cppStandard": "c++17",
+      "cStandard": "c23",
+      "cppStandard": "c++23",
       "intelliSenseMode": "linux-gcc-x64"
     }
   ],
