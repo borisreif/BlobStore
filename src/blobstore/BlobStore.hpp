@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../hashing/IHasher.hpp"
+#include "../meta_hashing/IFuzzyHasher.hpp"
 #include "BlobTypes.hpp"
 
 #include <cstdint>     // std::uint8_t, std::uint64_t, etc.
@@ -33,6 +34,7 @@ public:
     BlobStore(
         fs::path root,
         std::vector<hashing::HasherFactory> hashers,
+        std::vector<hashing::FuzzyHasherFactory> fuzzyHashers = {},
         std::size_t chunkChars = 8
     );
 
@@ -50,10 +52,12 @@ private:
     fs::path tmpDir_;
 
     std::vector<hashing::HasherFactory> hasherFactories_;
+    std::vector<hashing::FuzzyHasherFactory> fuzzyHasherFactories_;
     std::string primaryAlgorithm_;
     std::size_t chunkChars_;
 
     std::vector<std::unique_ptr<hashing::IHasher>> makeHashers() const;
+    std::vector<std::unique_ptr<hashing::IFuzzyHasher>> makeFuzzyHashers() const;
 
     fs::path objectDirForDigest(const std::string& hexDigest) const;
     fs::path dataPathForDigest(const std::string& hexDigest) const;

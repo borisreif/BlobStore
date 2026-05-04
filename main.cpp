@@ -38,6 +38,7 @@ int main(int argc, char* argv[]) {
         if (argc > 1) inputPath = fs::path{std::string{argv[1]}};
         if (argc > 2) outputPath = fs::path{std::string{argv[2]}};
 
+        /*
         blobdb::BlobStore store{fs::path{"data_root"}};
 
         std::cout << "Current working directory: " << fs::current_path() << '\n';
@@ -55,7 +56,7 @@ int main(int argc, char* argv[]) {
         } else {
             std::cout << "Failed to copy blob to: " << outputPath << '\n';
             return 2;
-        }
+        }*/
 
         return 0;
     } catch (const std::exception& ex) {

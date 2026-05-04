@@ -20,12 +20,14 @@ constexpr std::size_t DefaultIoChunkSize = 64 * 1024;
 BlobStore::BlobStore(
     fs::path root,
     std::vector<hashing::HasherFactory> hashers,
+    std::vector<hashing::FuzzyHasherFactory> fuzzyHashers,
     std::size_t chunkChars
 )
     : root_(std::move(root)),
       objectsDir_(root_ / "OBJECTS"),
       tmpDir_(root_ / "TMP"),
       hasherFactories_(std::move(hashers)),
+      fuzzyHasherFactories_(std::move(fuzzyHashers)),
       chunkChars_(chunkChars)
 {
     if (hasherFactories_.empty()) {
@@ -47,6 +49,17 @@ std::vector<std::unique_ptr<hashing::IHasher>> BlobStore::makeHashers() const {
     std::vector<std::unique_ptr<hashing::IHasher>> result;
 
     for (const auto& factory : hasherFactories_) {
+        result.push_back(factory());
+    }
+
+    return result;
+}
+
+std::vector<std::unique_ptr<hashing::IFuzzyHasher>>
+BlobStore::makeFuzzyHashers() const {
+    std::vector<std::unique_ptr<hashing::IFuzzyHasher>> result;
+
+    for (const auto& factory : fuzzyHasherFactories_) {
         result.push_back(factory());
     }
 

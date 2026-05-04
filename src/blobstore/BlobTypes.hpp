@@ -13,6 +13,11 @@ struct HashDigest {
     std::string hex;
 };
 
+struct FuzzyDigest {
+    std::string algorithm;
+    std::string signature;
+};
+
 struct BlobId {
     std::string algorithm;
     std::string hex;
@@ -23,6 +28,7 @@ struct PutResult {
     bool alreadyExisted;
     fs::path dataPath;
     std::vector<HashDigest> digests;
+    std::vector<FuzzyDigest> fuzzyDigests;
 };
 
 } // namespace blobstore
