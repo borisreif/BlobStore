@@ -21,26 +21,6 @@ const std::string& FnvHasher<UInt, Variant>::algorithm() const {
     return algorithm_;
 }
 
-/*
-template <typename UInt, FnvVariant Variant>
-void FnvHasher<UInt, Variant>::update(
-    const std::uint8_t* data,
-    std::size_t size
-) {
-    for (std::size_t i = 0; i < size; ++i) {
-        UInt byte = static_cast<UInt>(data[i]);
-
-        if constexpr (Variant == FnvVariant::Fnv1) {
-            state_ *= FnvTraits<UInt>::prime;
-            state_ ^= byte;
-        } else {
-            state_ ^= byte;
-            state_ *= FnvTraits<UInt>::prime;
-        }
-    }
-}
-*/
-
 template <typename UInt, FnvVariant Variant>
 void FnvHasher<UInt, Variant>::update(std::span<const std::uint8_t> data) {
     for (std::uint8_t byteValue : data) {

@@ -69,26 +69,6 @@ void Sha256OpenSSLHasher::update(std::span<const std::uint8_t> data) {
     }
 }
 
-/*
-std::string Sha256OpenSSLHasher::finalHex() {
-    unsigned char out[EVP_MAX_MD_SIZE];
-    unsigned int outLen = 0;
-
-    /*
-        EVP_DigestFinal_ex finalizes the current context.
-        Because our BlobStore creates fresh hashers per operation and calls
-        finalHex() once, this is fine.
-
-        If you want finalHex() to be repeatable/idempotent, copy the context
-        first with EVP_MD_CTX_copy_ex and finalize the copy instead.
-    *
-    if (EVP_DigestFinal_ex(state_->ctx, out, &outLen) != 1) {
-        throw std::runtime_error("EVP_DigestFinal_ex failed");
-    }
-
-    return toHex(out, outLen);
-}
-*/
 std::string Sha256OpenSSLHasher::finalHex() {
     EVP_MD_CTX* copy = EVP_MD_CTX_new();
 

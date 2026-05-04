@@ -1,17 +1,25 @@
-#include "src/blobstore/BlobStore.hpp"
-#include "src/hashing/FnvHasher.hpp"
 #include "blobstore/BlobStore.hpp"
-#include "hashing/Blake3Hasher.hpp"
+#include "hashing/FnvHasher.hpp"
 
+#include <exception>
 #include <filesystem>
 #include <iostream>
-#include <exception>
 #include <string>
 
+/**
+ * @brief Demo entry point for storing, verifying, and copying one blob file.
+ *
+ * @param argc Number of command-line arguments.
+ * @param argv Optional arguments: input path and output copy path.
+ * @return 0 on success, 1 on exceptions, 2 if copying the stored blob fails.
+ */
 int main(int argc, char* argv[]) {
     // Source - https://stackoverflow.com/a/51536462
     // Posted by Deepanshu, modified by community. See post 'Timeline' for change history
     // Retrieved 2026-05-04, License - CC BY-SA 4.0
+    //
+    // This small diagnostic is intentionally kept because it is useful when
+    // testing std::span and other C++20 features in VS Code/CMake builds.
     if (__cplusplus == 202302L) std::cout << "C++23";
     else if (__cplusplus == 202002L) std::cout << "C++20";
     else if (__cplusplus == 201703L) std::cout << "C++17";
@@ -22,41 +30,50 @@ int main(int argc, char* argv[]) {
     std::cout << "\n";
 
     try {
-        blobstore::BlobStore store(
-            "MY_STORE",
-            {
-                hashing::makeFnv1a_64Factory()
-            }
-        );
-
-
-
         namespace fs = std::filesystem;
 
         fs::path inputPath{"test_file.pdf"};
         fs::path outputPath{"out/report_copy.pdf"};
-        if (argc > 1) inputPath = fs::path{std::string{argv[1]}};
-        if (argc > 2) outputPath = fs::path{std::string{argv[2]}};
 
-        /*
-        blobdb::BlobStore store{fs::path{"data_root"}};
+        if (argc > 1) {
+            inputPath = fs::path{std::string{argv[1]}};
+        }
+
+        if (argc > 2) {
+            outputPath = fs::path{std::string{argv[2]}};
+        }
+
+        blobstore::BlobStore store(
+            "MY_STORE",
+            {
+                // FNV is deliberately used here as a tiny dependency-free demo
+                // hasher. For real blob identity, put BLAKE3/SHA-256 first.
+                hashing::makeFnv1a_64Factory()
+            }
+        );
 
         std::cout << "Current working directory: " << fs::current_path() << '\n';
         std::cout << "Input file: " << inputPath << '\n';
 
-        const std::string id = store.putFile(inputPath);
-        std::cout << "Blob id: " << id << '\n';
-        std::cout << "Stored at: " << store.pathOf(id) << '\n';
-        std::cout << "Exists? " << std::boolalpha << store.exists(id) << '\n';
-        std::cout << "Size: " << store.size(id) << " bytes\n";
-        std::cout << "Integrity OK? " << store.verify(id) << '\n';
+        const blobstore::PutResult result = store.putFile(inputPath);
 
-        if (store.getToFile(id, outputPath)) {
+        std::cout << "Blob id: "
+                  << result.id.algorithm
+                  << ':'
+                  << result.id.hex
+                  << '\n';
+
+        std::cout << "Stored at: " << result.dataPath << '\n';
+        std::cout << "Already existed? " << std::boolalpha << result.alreadyExisted << '\n';
+        std::cout << "Exists? " << store.contains(result.id) << '\n';
+        std::cout << "Integrity OK? " << store.verify(result.id) << '\n';
+
+        if (store.copyToFile(result.id, outputPath)) {
             std::cout << "Copied blob to: " << outputPath << '\n';
         } else {
             std::cout << "Failed to copy blob to: " << outputPath << '\n';
             return 2;
-        }*/
+        }
 
         return 0;
     } catch (const std::exception& ex) {

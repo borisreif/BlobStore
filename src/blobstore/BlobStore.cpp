@@ -7,12 +7,21 @@
 #include <random>
 #include <span>
 #include <sstream>
+#include <system_error>
 #include <unordered_map>
+#include <utility>
 
 namespace blobstore {
 
 namespace {
 
+/**
+ * @brief Default file I/O buffer size used while streaming payload bytes.
+ *
+ * This is unrelated to BlobStore::pathChunkChars_. The I/O chunk is the number
+ * of bytes read from disk at once; the path chunk is the number of hex
+ * characters used in each path component.
+ */
 constexpr std::size_t DefaultIoChunkSize = 64 * 1024;
 
 } // anonymous namespace
@@ -21,24 +30,28 @@ BlobStore::BlobStore(
     fs::path root,
     std::vector<hashing::HasherFactory> hashers,
     std::vector<hashing::FuzzyHasherFactory> fuzzyHashers,
-    std::size_t chunkChars
+    std::size_t pathChunkChars
 )
     : root_(std::move(root)),
       objectsDir_(root_ / "OBJECTS"),
       tmpDir_(root_ / "TMP"),
       hasherFactories_(std::move(hashers)),
       fuzzyHasherFactories_(std::move(fuzzyHashers)),
-      chunkChars_(chunkChars)
+      pathChunkChars_(pathChunkChars)
 {
     if (hasherFactories_.empty()) {
-        throw BlobStoreError("BlobStore needs at least one hasher");
+        throw BlobStoreError("BlobStore needs at least one exact hasher");
     }
 
-    if (chunkChars_ == 0 || chunkChars_ > 8) {
-        throw BlobStoreError("chunkChars should be between 1 and 8");
+    if (pathChunkChars_ == 0 || pathChunkChars_ > 8) {
+        throw BlobStoreError("pathChunkChars should be between 1 and 8");
     }
 
     auto primaryHasher = hasherFactories_.front()();
+    if (!primaryHasher) {
+        throw BlobStoreError("Primary hasher factory returned nullptr");
+    }
+
     primaryAlgorithm_ = primaryHasher->algorithm();
 
     fs::create_directories(objectsDir_);
@@ -47,20 +60,29 @@ BlobStore::BlobStore(
 
 std::vector<std::unique_ptr<hashing::IHasher>> BlobStore::makeHashers() const {
     std::vector<std::unique_ptr<hashing::IHasher>> result;
+    result.reserve(hasherFactories_.size());
 
     for (const auto& factory : hasherFactories_) {
-        result.push_back(factory());
+        auto hasher = factory();
+        if (!hasher) {
+            throw BlobStoreError("Hasher factory returned nullptr");
+        }
+        result.push_back(std::move(hasher));
     }
 
     return result;
 }
 
-std::vector<std::unique_ptr<hashing::IFuzzyHasher>>
-BlobStore::makeFuzzyHashers() const {
+std::vector<std::unique_ptr<hashing::IFuzzyHasher>> BlobStore::makeFuzzyHashers() const {
     std::vector<std::unique_ptr<hashing::IFuzzyHasher>> result;
+    result.reserve(fuzzyHasherFactories_.size());
 
     for (const auto& factory : fuzzyHasherFactories_) {
-        result.push_back(factory());
+        auto hasher = factory();
+        if (!hasher) {
+            throw BlobStoreError("Fuzzy hasher factory returned nullptr");
+        }
+        result.push_back(std::move(hasher));
     }
 
     return result;
@@ -76,6 +98,7 @@ PutResult BlobStore::putFile(const fs::path& sourcePath) {
     }
 
     auto hashers = makeHashers();
+    auto fuzzyHashers = makeFuzzyHashers();
 
     fs::path tmpPath = makeTempPath();
 
@@ -90,7 +113,6 @@ PutResult BlobStore::putFile(const fs::path& sourcePath) {
     }
 
     std::vector<std::uint8_t> buffer(DefaultIoChunkSize);
-
     std::uintmax_t totalSize = 0;
 
     while (in) {
@@ -103,11 +125,14 @@ PutResult BlobStore::putFile(const fs::path& sourcePath) {
 
         if (got > 0) {
             auto n = static_cast<std::size_t>(got);
-
             std::span<const std::uint8_t> chunk(buffer.data(), n);
 
             for (auto& hasher : hashers) {
                 hasher->update(chunk);
+            }
+
+            for (auto& fuzzyHasher : fuzzyHashers) {
+                fuzzyHasher->update(chunk);
             }
 
             out.write(
@@ -127,11 +152,22 @@ PutResult BlobStore::putFile(const fs::path& sourcePath) {
     }
 
     std::vector<HashDigest> digests;
+    digests.reserve(hashers.size());
 
     for (auto& hasher : hashers) {
         digests.push_back(HashDigest{
             hasher->algorithm(),
             normalizeHex(hasher->finalHex())
+        });
+    }
+
+    std::vector<FuzzyDigest> fuzzyDigests;
+    fuzzyDigests.reserve(fuzzyHashers.size());
+
+    for (auto& fuzzyHasher : fuzzyHashers) {
+        fuzzyDigests.push_back(FuzzyDigest{
+            fuzzyHasher->algorithm(),
+            fuzzyHasher->finalSignature()
         });
     }
 
@@ -152,7 +188,8 @@ PutResult BlobStore::putFile(const fs::path& sourcePath) {
                 BlobId{primary.algorithm, primary.hex},
                 true,
                 dataPath,
-                digests
+                digests,
+                fuzzyDigests
             };
         }
 
@@ -163,19 +200,19 @@ PutResult BlobStore::putFile(const fs::path& sourcePath) {
 
     fs::rename(tmpPath, dataPath);
 
-    writeMeta(primary.hex, totalSize, digests);
+    writeMeta(primary.hex, totalSize, digests, fuzzyDigests);
 
     return PutResult{
         BlobId{primary.algorithm, primary.hex},
         false,
         dataPath,
-        digests
+        digests,
+        fuzzyDigests
     };
 }
 
 fs::path BlobStore::pathFor(const BlobId& id) const {
     requireCanonicalId(id, primaryAlgorithm_);
-
     return dataPathForDigest(normalizeHex(id.hex));
 }
 
@@ -193,7 +230,6 @@ bool BlobStore::verify(const BlobId& id) const {
     }
 
     std::vector<HashDigest> storedDigests = readMetaFor(id);
-
     std::unordered_map<std::string, std::string> expected;
 
     for (const auto& digest : storedDigests) {
@@ -219,7 +255,6 @@ bool BlobStore::verify(const BlobId& id) const {
 
         if (got > 0) {
             auto n = static_cast<std::size_t>(got);
-
             std::span<const std::uint8_t> chunk(buffer.data(), n);
 
             for (auto& hasher : hashers) {
@@ -235,7 +270,7 @@ bool BlobStore::verify(const BlobId& id) const {
         auto it = expected.find(algorithm);
 
         if (it == expected.end()) {
-            continue;
+            return false;
         }
 
         if (it->second != actual) {
@@ -244,6 +279,23 @@ bool BlobStore::verify(const BlobId& id) const {
     }
 
     return true;
+}
+
+bool BlobStore::copyToFile(const BlobId& id, const fs::path& outputPath) const {
+    fs::path inputPath = pathFor(id);
+
+    if (!fs::exists(inputPath)) {
+        return false;
+    }
+
+    if (outputPath.has_parent_path()) {
+        fs::create_directories(outputPath.parent_path());
+    }
+
+    std::error_code ec;
+    fs::copy_file(inputPath, outputPath, fs::copy_options::overwrite_existing, ec);
+
+    return !ec;
 }
 
 std::vector<HashDigest> BlobStore::readMetaFor(const BlobId& id) const {
@@ -288,13 +340,55 @@ std::vector<HashDigest> BlobStore::readMetaFor(const BlobId& id) const {
     return result;
 }
 
+std::vector<FuzzyDigest> BlobStore::readFuzzyMetaFor(const BlobId& id) const {
+    requireCanonicalId(id, primaryAlgorithm_);
+
+    fs::path metaPath = metaPathForDigest(normalizeHex(id.hex));
+
+    std::ifstream in(metaPath);
+    if (!in) {
+        throw BlobStoreError("Could not open metadata file: " + metaPath.string());
+    }
+
+    std::vector<FuzzyDigest> result;
+    std::string line;
+
+    while (std::getline(in, line)) {
+        const std::string prefix = "fuzzy.";
+
+        if (line.rfind(prefix, 0) != 0) {
+            continue;
+        }
+
+        auto equalsPos = line.find('=');
+
+        if (equalsPos == std::string::npos) {
+            continue;
+        }
+
+        std::string algorithm = line.substr(
+            prefix.size(),
+            equalsPos - prefix.size()
+        );
+
+        std::string signature = line.substr(equalsPos + 1);
+
+        result.push_back(FuzzyDigest{
+            algorithm,
+            signature
+        });
+    }
+
+    return result;
+}
+
 fs::path BlobStore::objectDirForDigest(const std::string& hexDigestRaw) const {
     std::string hexDigest = normalizeHex(hexDigestRaw);
 
     fs::path path = objectsDir_;
 
-    for (std::size_t i = 0; i < hexDigest.size(); i += chunkChars_) {
-        path /= hexDigest.substr(i, chunkChars_);
+    for (std::size_t i = 0; i < hexDigest.size(); i += pathChunkChars_) {
+        path /= hexDigest.substr(i, pathChunkChars_);
     }
 
     return path;
@@ -343,7 +437,8 @@ fs::path BlobStore::makeTempPath() const {
 void BlobStore::writeMeta(
     const std::string& primaryDigest,
     std::uintmax_t size,
-    const std::vector<HashDigest>& digests
+    const std::vector<HashDigest>& digests,
+    const std::vector<FuzzyDigest>& fuzzyDigests
 ) const {
     fs::path objectDir = objectDirForDigest(primaryDigest);
 
@@ -367,6 +462,14 @@ void BlobStore::writeMeta(
             << digest.algorithm
             << "="
             << normalizeHex(digest.hex)
+            << "\n";
+    }
+
+    for (const auto& fuzzyDigest : fuzzyDigests) {
+        out << "fuzzy."
+            << fuzzyDigest.algorithm
+            << "="
+            << fuzzyDigest.signature
             << "\n";
     }
 
