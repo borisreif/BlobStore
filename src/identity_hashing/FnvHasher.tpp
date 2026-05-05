@@ -7,7 +7,7 @@
 #include <iomanip>
 #include <sstream>
 
-namespace hashing {
+namespace identity_hashing {
 
 template <typename UInt, FnvVariant Variant>
 FnvHasher<UInt, Variant>::FnvHasher()
@@ -69,6 +69,6 @@ std::string FnvHasher<UInt, Variant>::makeAlgorithmName() {
     return name;
 }
 
-} // namespace hashing
+} // namespace identity_hashing
 
 #endif // HASHING_FNV_HASHER_HPP

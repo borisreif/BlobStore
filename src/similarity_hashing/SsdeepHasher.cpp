@@ -6,7 +6,7 @@ extern "C" {
 #include <fuzzy.h>
 }
 
-namespace hashing {
+namespace similarity_hashing {
 
 struct SsdeepHasher::State {
     fuzzy_state* state = nullptr;
@@ -89,10 +89,10 @@ int SsdeepHasher::compare(
     );
 }
 
-FuzzyHasherFactory makeSsdeepFactory() {
+SimilarityHasherFactory makeSsdeepFactory() {
     return [] {
         return std::make_unique<SsdeepHasher>();
     };
 }
 
-} // namespace hashing
+} // namespace similarity_hashing

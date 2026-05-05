@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IHasher.hpp"
+#include "IIdentityHasher.hpp"
 
 #include <cstdint>
 #include <iomanip>
@@ -23,7 +23,7 @@
  * @version 0.0.2
  */
 
-namespace hashing {
+namespace identity_hashing {
 
 /**
  * @brief Traits template specialized for each supported multiplicative width.
@@ -115,7 +115,7 @@ struct MultiplicativeTraits<std::uint64_t> {
  *         modulo arithmetic.
  */
 template <typename UInt>
-class MultiplicativeHasher final : public IHasher {
+class MultiplicativeHasher final : public IIdentityHasher {
 public:
     static_assert(
         std::is_unsigned_v<UInt>,
@@ -196,4 +196,4 @@ using Multiplicative32Hasher = MultiplicativeHasher<std::uint32_t>;
 /** @brief Convenient alias for a 64-bit toy multiplicative hasher. */
 using Multiplicative64Hasher = MultiplicativeHasher<std::uint64_t>;
 
-} // namespace hashing
+} // namespace identity_hashing

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../hashing/IHasher.hpp"
-#include "../metahashing/IFuzzyHasher.hpp"
+#include "../identity_hashing/IIdentityHasher.hpp"
+#include "../similarity_hashing/ISimilarityHasher.hpp"
 #include "BlobTypes.hpp"
 
 #include <cstdint>
@@ -65,15 +65,15 @@ public:
      *
      * @param root Store root. `OBJECTS` and `TMP` directories are created under it.
      * @param hashers Exact hashers. The first one becomes the canonical path hasher.
-     * @param fuzzyHashers Optional fuzzy/similarity hashers used only for metadata.
+     * @param similarityHashers Optional similarity hashers used only for metadata.
      * @param pathChunkChars Number of hex characters per directory component.
      *
      * @throws BlobStoreError if no exact hasher is provided or if pathChunkChars is invalid.
      */
     BlobStore(
         fs::path root,
-        std::vector<hashing::HasherFactory> hashers,
-        std::vector<hashing::FuzzyHasherFactory> fuzzyHashers = {},
+        std::vector<identity_hashing::IdentityHasherFactory> identityHashers,
+        std::vector<similarity_hashing::SimilarityHasherFactory> similarityHashers = {},
         std::size_t pathChunkChars = 8
     );
 
@@ -136,11 +136,11 @@ public:
     std::vector<HashDigest> readMetaFor(const BlobId& id) const;
 
     /**
-     * @brief Read all fuzzy signatures from a blob's META.TXT.
+     * @brief Read all similarity signatures from a blob's META.TXT.
      * @param id Blob id using the primary algorithm.
-     * @return Fuzzy signatures found in metadata.
+     * @return Similarity signatures found in metadata.
      */
-    std::vector<FuzzyDigest> readFuzzyMetaFor(const BlobId& id) const;
+    std::vector<SimilarityDigest> readSimilarityMetaFor(const BlobId& id) const;
 
 private:
     /** @brief Store root supplied by the user. */
@@ -153,10 +153,12 @@ private:
     fs::path tmpDir_;
 
     /** @brief Factories for exact hashers. The first factory is canonical. */
-    std::vector<hashing::HasherFactory> hasherFactories_;
+    std::vector<identity_hashing::IdentityHasherFactory>
+        identityHasherFactories_;
 
-    /** @brief Factories for optional fuzzy hashers. */
-    std::vector<hashing::FuzzyHasherFactory> fuzzyHasherFactories_;
+    /** @brief Factories for optional similarity hashers. */
+    std::vector<similarity_hashing::SimilarityHasherFactory>
+        similarityHasherFactories_;
 
     /** @brief Algorithm label of the canonical/path hasher. */
     std::string primaryAlgorithm_;
@@ -165,10 +167,12 @@ private:
     std::size_t pathChunkChars_;
 
     /** @brief Create one fresh exact hasher from every configured factory. */
-    std::vector<std::unique_ptr<hashing::IHasher>> makeHashers() const;
+    std::vector<std::unique_ptr<identity_hashing::IIdentityHasher>>
+    makeIdentityHashers() const;
 
-    /** @brief Create one fresh fuzzy hasher from every configured factory. */
-    std::vector<std::unique_ptr<hashing::IFuzzyHasher>> makeFuzzyHashers() const;
+    /** @brief Create one fresh similarity hasher from every configured factory. */
+    std::vector<std::unique_ptr<similarity_hashing::ISimilarityHasher>>
+    makeSimilarityHashers() const;
 
     /** @brief Convert a canonical hex digest into the object directory path. */
     fs::path objectDirForDigest(const std::string& hexDigest) const;
@@ -187,13 +191,13 @@ private:
      * @param primaryDigest Canonical digest used to locate the object directory.
      * @param size Payload size in bytes.
      * @param digests Exact digests to write as `hash.<algorithm>=...` lines.
-     * @param fuzzyDigests Fuzzy signatures to write as `fuzzy.<algorithm>=...` lines.
+     * @param similarityDigests Similarity signatures to write as `similarity.<algorithm>=...` lines.
      */
     void writeMeta(
         const std::string& primaryDigest,
         std::uintmax_t size,
         const std::vector<HashDigest>& digests,
-        const std::vector<FuzzyDigest>& fuzzyDigests
+        const std::vector<SimilarityDigest>& similarityDigests
     ) const;
 
     /** @brief Compare two files byte-for-byte without loading them entirely into memory. */

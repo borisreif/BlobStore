@@ -12,7 +12,7 @@
 // not a cryptographic hash and it is not a complete byte-stream blob hasher by
 // itself.
 
-namespace hashing::fib {
+namespace identity_hashing::fib {
 
 /**
  * @brief Traits template specialized for Fibonacci-hashing word sizes.
@@ -95,4 +95,4 @@ std::size_t index(UInt key, unsigned indexBits) {
     );
 }
 
-} // namespace hashing::fib
+} // namespace identity_hashing::fib

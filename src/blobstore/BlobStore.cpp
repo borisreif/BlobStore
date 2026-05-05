@@ -28,18 +28,18 @@ constexpr std::size_t DefaultIoChunkSize = 64 * 1024;
 
 BlobStore::BlobStore(
     fs::path root,
-    std::vector<hashing::HasherFactory> hashers,
-    std::vector<hashing::FuzzyHasherFactory> fuzzyHashers,
+    std::vector<identity_hashing::IdentityHasherFactory> identityHashers,
+    std::vector<similarity_hashing::SimilarityHasherFactory> similarityHashers,
     std::size_t pathChunkChars
 )
     : root_(std::move(root)),
       objectsDir_(root_ / "OBJECTS"),
       tmpDir_(root_ / "TMP"),
-      hasherFactories_(std::move(hashers)),
-      fuzzyHasherFactories_(std::move(fuzzyHashers)),
+      identityHasherFactories_(std::move(identityHashers)),
+      similarityHasherFactories_(std::move(similarityHashers)),
       pathChunkChars_(pathChunkChars)
 {
-    if (hasherFactories_.empty()) {
+    if (identityHasherFactories_.empty()) {
         throw BlobStoreError("BlobStore needs at least one exact hasher");
     }
 
@@ -47,7 +47,7 @@ BlobStore::BlobStore(
         throw BlobStoreError("pathChunkChars should be between 1 and 8");
     }
 
-    auto primaryHasher = hasherFactories_.front()();
+    auto primaryHasher = identityHasherFactories_.front()();
     if (!primaryHasher) {
         throw BlobStoreError("Primary hasher factory returned nullptr");
     }
@@ -58,14 +58,14 @@ BlobStore::BlobStore(
     fs::create_directories(tmpDir_);
 }
 
-std::vector<std::unique_ptr<hashing::IHasher>> BlobStore::makeHashers() const {
-    std::vector<std::unique_ptr<hashing::IHasher>> result;
-    result.reserve(hasherFactories_.size());
+std::vector<std::unique_ptr<identity_hashing::IIdentityHasher>> BlobStore::makeIdentityHashers() const {
+    std::vector<std::unique_ptr<identity_hashing::IIdentityHasher>> result;
+    result.reserve(identityHasherFactories_.size());
 
-    for (const auto& factory : hasherFactories_) {
+    for (const auto& factory : identityHasherFactories_) {
         auto hasher = factory();
         if (!hasher) {
-            throw BlobStoreError("Hasher factory returned nullptr");
+            throw BlobStoreError("Identity hasher factory returned nullptr");
         }
         result.push_back(std::move(hasher));
     }
@@ -73,14 +73,14 @@ std::vector<std::unique_ptr<hashing::IHasher>> BlobStore::makeHashers() const {
     return result;
 }
 
-std::vector<std::unique_ptr<hashing::IFuzzyHasher>> BlobStore::makeFuzzyHashers() const {
-    std::vector<std::unique_ptr<hashing::IFuzzyHasher>> result;
-    result.reserve(fuzzyHasherFactories_.size());
+std::vector<std::unique_ptr<similarity_hashing::ISimilarityHasher>> BlobStore::makeSimilarityHashers() const {
+    std::vector<std::unique_ptr<similarity_hashing::ISimilarityHasher>> result;
+    result.reserve(similarityHasherFactories_.size());
 
-    for (const auto& factory : fuzzyHasherFactories_) {
+    for (const auto& factory : similarityHasherFactories_) {
         auto hasher = factory();
         if (!hasher) {
-            throw BlobStoreError("Fuzzy hasher factory returned nullptr");
+            throw BlobStoreError("Similarity hasher factory returned nullptr");
         }
         result.push_back(std::move(hasher));
     }
@@ -97,8 +97,8 @@ PutResult BlobStore::putFile(const fs::path& sourcePath) {
         throw BlobStoreError("Source path is not a regular file: " + sourcePath.string());
     }
 
-    auto hashers = makeHashers();
-    auto fuzzyHashers = makeFuzzyHashers();
+    auto hashers = makeIdentityHashers();
+    auto similarityHashers = makeSimilarityHashers();
 
     fs::path tmpPath = makeTempPath();
 
@@ -131,8 +131,8 @@ PutResult BlobStore::putFile(const fs::path& sourcePath) {
                 hasher->update(chunk);
             }
 
-            for (auto& fuzzyHasher : fuzzyHashers) {
-                fuzzyHasher->update(chunk);
+            for (auto& similarityHasher : similarityHashers) {
+                similarityHasher->update(chunk);
             }
 
             out.write(
@@ -161,13 +161,13 @@ PutResult BlobStore::putFile(const fs::path& sourcePath) {
         });
     }
 
-    std::vector<FuzzyDigest> fuzzyDigests;
-    fuzzyDigests.reserve(fuzzyHashers.size());
+    std::vector<SimilarityDigest> similarityDigests;
+    similarityDigests.reserve(similarityHashers.size());
 
-    for (auto& fuzzyHasher : fuzzyHashers) {
-        fuzzyDigests.push_back(FuzzyDigest{
-            fuzzyHasher->algorithm(),
-            fuzzyHasher->finalSignature()
+    for (auto& similarityHasher : similarityHashers) {
+        similarityDigests.push_back(SimilarityDigest{
+            similarityHasher->algorithm(),
+            similarityHasher->finalSignature()
         });
     }
 
@@ -189,7 +189,7 @@ PutResult BlobStore::putFile(const fs::path& sourcePath) {
                 true,
                 dataPath,
                 digests,
-                fuzzyDigests
+                similarityDigests
             };
         }
 
@@ -200,14 +200,14 @@ PutResult BlobStore::putFile(const fs::path& sourcePath) {
 
     fs::rename(tmpPath, dataPath);
 
-    writeMeta(primary.hex, totalSize, digests, fuzzyDigests);
+    writeMeta(primary.hex, totalSize, digests, similarityDigests);
 
     return PutResult{
         BlobId{primary.algorithm, primary.hex},
         false,
         dataPath,
         digests,
-        fuzzyDigests
+        similarityDigests
     };
 }
 
@@ -236,7 +236,7 @@ bool BlobStore::verify(const BlobId& id) const {
         expected[digest.algorithm] = normalizeHex(digest.hex);
     }
 
-    auto hashers = makeHashers();
+    auto hashers = makeIdentityHashers();
 
     std::ifstream in(dataPath, std::ios::binary);
     if (!in) {
@@ -340,7 +340,7 @@ std::vector<HashDigest> BlobStore::readMetaFor(const BlobId& id) const {
     return result;
 }
 
-std::vector<FuzzyDigest> BlobStore::readFuzzyMetaFor(const BlobId& id) const {
+std::vector<SimilarityDigest> BlobStore::readSimilarityMetaFor(const BlobId& id) const {
     requireCanonicalId(id, primaryAlgorithm_);
 
     fs::path metaPath = metaPathForDigest(normalizeHex(id.hex));
@@ -350,11 +350,11 @@ std::vector<FuzzyDigest> BlobStore::readFuzzyMetaFor(const BlobId& id) const {
         throw BlobStoreError("Could not open metadata file: " + metaPath.string());
     }
 
-    std::vector<FuzzyDigest> result;
+    std::vector<SimilarityDigest> result;
     std::string line;
 
     while (std::getline(in, line)) {
-        const std::string prefix = "fuzzy.";
+        const std::string prefix = "similarity.";
 
         if (line.rfind(prefix, 0) != 0) {
             continue;
@@ -373,7 +373,7 @@ std::vector<FuzzyDigest> BlobStore::readFuzzyMetaFor(const BlobId& id) const {
 
         std::string signature = line.substr(equalsPos + 1);
 
-        result.push_back(FuzzyDigest{
+        result.push_back(SimilarityDigest{
             algorithm,
             signature
         });
@@ -438,7 +438,7 @@ void BlobStore::writeMeta(
     const std::string& primaryDigest,
     std::uintmax_t size,
     const std::vector<HashDigest>& digests,
-    const std::vector<FuzzyDigest>& fuzzyDigests
+    const std::vector<SimilarityDigest>& similarityDigests
 ) const {
     fs::path objectDir = objectDirForDigest(primaryDigest);
 
@@ -465,11 +465,11 @@ void BlobStore::writeMeta(
             << "\n";
     }
 
-    for (const auto& fuzzyDigest : fuzzyDigests) {
-        out << "fuzzy."
-            << fuzzyDigest.algorithm
+    for (const auto& similarityDigest : similarityDigests) {
+        out << "similarity."
+            << similarityDigest.algorithm
             << "="
-            << fuzzyDigest.signature
+            << similarityDigest.signature
             << "\n";
     }
 

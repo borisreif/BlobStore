@@ -8,7 +8,9 @@
 #include <string>
 
 /**
- * The Hasher Interface: IHasher
+ * The Identity Hasher Interface: IIdentityHasher
+ * identity_hashing/
+ *  "Does this blob have exactly this identity?"
  * 
  * @link https://en.wikipedia.org/wiki/Hash_function
  * @link https://en.wikipedia.org/wiki/Cryptographic_hash_function
@@ -30,7 +32,7 @@
  * @version 0.0.2
  */
 
-namespace hashing {
+namespace identity_hashing {
 
 /**
  * @brief Common streaming interface for exact hash algorithms.
@@ -40,12 +42,12 @@ namespace hashing {
  * The interface is intentionally byte-oriented because blob data is arbitrary
  * binary data, not text.
  */
-class IHasher {
+class IIdentityHasher {
 public:
     /**
      * @brief Virtual destructor for safe deletion through base-class pointers.
      */
-    virtual ~IHasher() = default;
+    virtual ~IIdentityHasher() = default;
 
     /**
      * @brief Return the stable algorithm name used in metadata.
@@ -79,6 +81,6 @@ public:
  * Hashers are stateful, so BlobStore asks each factory for a new object for
  * every put/verify operation rather than reusing one finalized object.
  */
-using HasherFactory = std::function<std::unique_ptr<IHasher>()>;
+using IdentityHasherFactory = std::function<std::unique_ptr<IIdentityHasher>()>;
 
-} // namespace hashing
+} // namespace identity_hashing

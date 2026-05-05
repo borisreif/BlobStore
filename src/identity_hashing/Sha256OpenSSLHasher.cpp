@@ -6,7 +6,7 @@
 
 #include <openssl/evp.h>
 
-namespace hashing {
+namespace identity_hashing {
 
 struct Sha256OpenSSLHasher::State {
     EVP_MD_CTX* ctx = nullptr;
@@ -111,10 +111,10 @@ std::string Sha256OpenSSLHasher::toHex(
     return out.str();
 }
 
-HasherFactory makeSha256OpenSSLFactory() {
+IdentityHasherFactory makeSha256OpenSSLFactory() {
     return [] {
         return std::make_unique<Sha256OpenSSLHasher>();
     };
 }
 
-} // namespace hashing
+} // namespace identity_hashing

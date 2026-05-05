@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IHasher.hpp"
+#include "IIdentityHasher.hpp"
 
 #include <cstdint>
 #include <memory>
@@ -14,7 +14,7 @@
 // SHA256_* functions. EVP keeps the implementation flexible and avoids APIs
 // that are deprecated in modern OpenSSL versions.
 
-namespace hashing {
+namespace identity_hashing {
 
 /**
  * @brief Streaming SHA-256 hasher implemented with OpenSSL EVP.
@@ -23,7 +23,7 @@ namespace hashing {
  * public header does not expose OpenSSL implementation details. The algorithm
  * label is always `sha256`.
  */
-class Sha256OpenSSLHasher final : public IHasher {
+class Sha256OpenSSLHasher final : public IIdentityHasher {
 public:
     /**
      * @brief Allocate and initialize a new SHA-256 EVP context.
@@ -98,6 +98,6 @@ private:
  * @brief Create a factory that returns fresh SHA-256 OpenSSL hashers.
  * @return Factory compatible with BlobStore.
  */
-HasherFactory makeSha256OpenSSLFactory();
+IdentityHasherFactory makeSha256OpenSSLFactory();
 
-} // namespace hashing
+} // namespace identity_hashing

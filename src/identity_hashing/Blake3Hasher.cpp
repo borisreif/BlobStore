@@ -9,7 +9,7 @@ extern "C" {
 #include "../thirdparty/blake3/blake3.h"
 }
 
-namespace hashing {
+namespace identity_hashing {
 
 struct Blake3Hasher::State {
     blake3_hasher ctx;
@@ -79,10 +79,10 @@ std::string Blake3Hasher::toHex(const std::uint8_t* bytes, std::size_t n) {
     return out.str();
 }
 
-HasherFactory makeBlake3Factory(std::size_t digestLength) {
+IdentityHasherFactory makeBlake3Factory(std::size_t digestLength) {
     return [digestLength] {
         return std::make_unique<Blake3Hasher>(digestLength);
     };
 }
 
-} // namespace hashing
+} // namespace identity_hashing

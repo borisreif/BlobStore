@@ -6,10 +6,18 @@
       "type": "shell",
       "command": "cmake",
       "args": [
-        "-S", "${workspaceFolder}",
-        "-B", "${workspaceFolder}/build",
-        "-G", "Ninja",
-        "-DCMAKE_BUILD_TYPE=Debug"
+        "-S",
+        "${workspaceFolder}",
+        "-B",
+        "${workspaceFolder}/build",
+        "-G",
+        "Ninja",
+        "-DCMAKE_BUILD_TYPE=Debug",
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+        "-DBLOBSTORE_WITH_OPENSSL=ON",
+        "-DBLOBSTORE_WITH_BLAKE3=ON",
+        "-DBLOBSTORE_WITH_SSDEEP=OFF",
+        "-DBLOBSTORE_WITH_TLSH=OFF"
       ],
       "problemMatcher": []
     },
@@ -18,14 +26,17 @@
       "type": "shell",
       "command": "cmake",
       "args": [
-        "--build", "${workspaceFolder}/build"
+        "--build",
+        "${workspaceFolder}/build"
       ],
       "dependsOn": "CMake: configure",
       "group": {
         "kind": "build",
         "isDefault": true
       },
-      "problemMatcher": ["$gcc"]
+      "problemMatcher": [
+        "$gcc"
+      ]
     },
     {
       "label": "Run blob demo",

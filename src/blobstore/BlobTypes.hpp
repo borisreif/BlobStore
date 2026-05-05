@@ -9,12 +9,12 @@ namespace blobstore {
 namespace fs = std::filesystem;
 
 /**
- * @brief Exact hash digest produced by one normal hasher.
+ * @brief Exact hash digest produced by one identity hasher.
  *
  * A digest is stored together with the algorithm name so that the blob store
  * remains algorithm-agile. For example, two different algorithms may both
- * produce a string of hexadecimal characters, but `sha256:ABCD...` and
- * `blake3-256:ABCD...` are not the same kind of identifier.
+ * produce hexadecimal text, but `sha256:ABCD...` and `blake3-256:ABCD...` are
+ * different identifiers.
  */
 struct HashDigest {
     /** @brief Stable algorithm label, for example `fnv1a-64`, `sha256`, or `blake3-256`. */
@@ -25,24 +25,33 @@ struct HashDigest {
 };
 
 /**
- * @brief Similarity/fuzzy digest produced by a fuzzy hasher.
+ * @brief Similarity digest produced by one similarity hasher.
  *
- * Fuzzy signatures are metadata only. They are useful for similarity search,
- * but they should not be used as canonical blob identities.
+ * Similarity signatures are metadata only. They are useful for comparing blobs
+ * with algorithms such as ssdeep or TLSH, but they should not be used as
+ * canonical blob identities and should not determine the storage path.
  */
-struct FuzzyDigest {
-    /** @brief Stable fuzzy-hash algorithm label, for example `ssdeep`. */
+struct SimilarityDigest {
+    /** @brief Stable similarity algorithm label, for example `ssdeep` or `tlsh`. */
     std::string algorithm;
 
-    /** @brief Algorithm-specific fuzzy signature string. It is not necessarily hexadecimal. */
+    /** @brief Algorithm-specific signature string. It is not necessarily hexadecimal. */
     std::string signature;
 };
 
 /**
+ * @brief Backward-compatible alias for older code/comments that used the term fuzzy.
+ *
+ * New code should prefer SimilarityDigest because the folder/interface names now
+ * use the broader term similarity hashing.
+ */
+using FuzzyDigest = SimilarityDigest;
+
+/**
  * @brief Public identifier for a blob in this database-free layout.
  *
- * The current BlobStore can directly locate blobs by the primary/canonical
- * hash algorithm selected in the constructor. Other digests can be stored in
+ * The current BlobStore can directly locate blobs by the primary/canonical hash
+ * algorithm selected in the constructor. Other digests can be stored in
  * metadata, but without a database/index they are not enough to derive a path.
  */
 struct BlobId {
@@ -57,7 +66,7 @@ struct BlobId {
  * @brief Result returned by BlobStore::putFile().
  *
  * This packages the new or existing blob id, the final physical data path, and
- * all digests computed while streaming the input file.
+ * all exact/similarity digests computed while streaming the input file.
  */
 struct PutResult {
     /** @brief Canonical blob identifier. */
@@ -72,8 +81,15 @@ struct PutResult {
     /** @brief Exact digests computed for this blob. */
     std::vector<HashDigest> digests;
 
-    /** @brief Optional fuzzy signatures computed for this blob. */
-    std::vector<FuzzyDigest> fuzzyDigests;
+    /** @brief Optional similarity signatures computed for this blob. */
+    std::vector<SimilarityDigest> similarityDigests;
+
+    /**
+     * @brief Deprecated alias-style field is intentionally not stored here.
+     *
+     * Use similarityDigests. The old name fuzzyDigests was removed from the
+     * active API to make the identity/similarity split clearer.
+     */
 };
 
 } // namespace blobstore

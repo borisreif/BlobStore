@@ -1,19 +1,20 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(BlobStorePrototype VERSION 0.3.0 LANGUAGES C CXX)
+project(BlobStorePrototype VERSION 0.4.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-option(BLOBSTORE_WITH_OPENSSL "Build the OpenSSL SHA-256 hasher" ON)
-option(BLOBSTORE_WITH_BLAKE3 "Build the vendored portable BLAKE3 hasher" ON)
-option(BLOBSTORE_WITH_SSDEEP "Build the optional ssdeep fuzzy hasher" OFF)
+option(BLOBSTORE_WITH_OPENSSL "Build the OpenSSL SHA-256 identity hasher" ON)
+option(BLOBSTORE_WITH_BLAKE3 "Build the vendored portable BLAKE3 identity hasher" ON)
+option(BLOBSTORE_WITH_SSDEEP "Build the optional ssdeep similarity hasher" OFF)
+option(BLOBSTORE_WITH_TLSH "Build the optional TLSH similarity hasher" OFF)
 
 add_library(blobstore
     src/blobstore/BlobStore.cpp
-    src/hashing/FnvHasher.cpp
+    src/identity_hashing/FnvHasher.cpp
 )
 
 target_include_directories(blobstore
@@ -42,7 +43,7 @@ if(BLOBSTORE_WITH_BLAKE3)
     endforeach()
 
     target_sources(blobstore PRIVATE
-        src/hashing/Blake3Hasher.cpp
+        src/identity_hashing/Blake3Hasher.cpp
         src/thirdparty/blake3/blake3.c
         src/thirdparty/blake3/blake3_dispatch.c
         src/thirdparty/blake3/blake3_portable.c
@@ -59,7 +60,7 @@ endif()
 if(BLOBSTORE_WITH_OPENSSL)
     find_package(OpenSSL REQUIRED)
     target_sources(blobstore PRIVATE
-        src/hashing/Sha256OpenSSLHasher.cpp
+        src/identity_hashing/Sha256OpenSSLHasher.cpp
     )
     target_link_libraries(blobstore PUBLIC OpenSSL::Crypto)
 endif()
@@ -73,10 +74,28 @@ if(BLOBSTORE_WITH_SSDEEP)
     endif()
 
     target_sources(blobstore PRIVATE
-        src/metahashing/SsdeepHasher.cpp
+        src/similarity_hashing/SsdeepHasher.cpp
     )
     target_include_directories(blobstore PRIVATE ${FUZZY_INCLUDE_DIR})
     target_link_libraries(blobstore PUBLIC ${FUZZY_LIBRARY})
+endif()
+
+if(BLOBSTORE_WITH_TLSH)
+    find_path(TLSH_INCLUDE_DIR tlsh.h)
+    find_library(TLSH_LIBRARY tlsh)
+
+    if(NOT TLSH_INCLUDE_DIR OR NOT TLSH_LIBRARY)
+        message(FATAL_ERROR
+            "BLOBSTORE_WITH_TLSH=ON but libtlsh/tlsh.h was not found. "
+            "Install it with: sudo apt install libtlsh-dev"
+        )
+    endif()
+
+    target_sources(blobstore PRIVATE
+        src/similarity_hashing/TlshHasher.cpp
+    )
+    target_include_directories(blobstore PRIVATE ${TLSH_INCLUDE_DIR})
+    target_link_libraries(blobstore PUBLIC ${TLSH_LIBRARY})
 endif()
 
 add_executable(blob src/main.cpp)
@@ -92,6 +111,10 @@ endif()
 
 if(BLOBSTORE_WITH_SSDEEP)
     target_compile_definitions(blob PRIVATE BLOBSTORE_WITH_SSDEEP)
+endif()
+
+if(BLOBSTORE_WITH_TLSH)
+    target_compile_definitions(blob PRIVATE BLOBSTORE_WITH_TLSH)
 endif()
 
 if(MSVC)

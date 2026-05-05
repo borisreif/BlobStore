@@ -1,16 +1,20 @@
 #include "blobstore/BlobStore.hpp"
-// #include "hashing/FnvHasher.hpp"
+#include "identity_hashing/FnvHasher.hpp"
 
 #ifdef BLOBSTORE_WITH_BLAKE3
-#include "hashing/Blake3Hasher.hpp"
+#include "identity_hashing/Blake3Hasher.hpp"
 #endif
 
 #ifdef BLOBSTORE_WITH_OPENSSL
-#include "hashing/Sha256OpenSSLHasher.hpp"
+#include "identity_hashing/Sha256OpenSSLHasher.hpp"
 #endif
 
 #ifdef BLOBSTORE_WITH_SSDEEP
-#include "metahashing/SsdeepHasher.hpp"
+#include "similarity_hashing/SsdeepHasher.hpp"
+#endif
+
+#ifdef BLOBSTORE_WITH_TLSH
+#include "similarity_hashing/TlshHasher.hpp"
 #endif
 
 #include <exception>
@@ -48,37 +52,40 @@ static void printCppStandard() {
  *
  * @return Exact hasher factories for BlobStore.
  */
-static std::vector<hashing::HasherFactory> makeDemoHashers() {
-    std::vector<hashing::HasherFactory> hashers;
+static std::vector<identity_hashing::IdentityHasherFactory> makeIdentityHashers() {
+    std::vector<identity_hashing::IdentityHasherFactory> hashers;
 
 #ifdef BLOBSTORE_WITH_BLAKE3
-    hashers.push_back(hashing::makeBlake3Factory());
+    hashers.push_back(identity_hashing::makeBlake3Factory());
 #else
-    hashers.push_back(hashing::makeFnv1a_64Factory());
+    hashers.push_back(identity_hashing::makeFnv1a_64Factory());
 #endif
 
 #ifdef BLOBSTORE_WITH_OPENSSL
-    hashers.push_back(hashing::makeSha256OpenSSLFactory());
+    hashers.push_back(identity_hashing::makeSha256OpenSSLFactory());
 #endif
 
     return hashers;
 }
 
 /**
- * @brief Build the optional fuzzy-hasher list used by the demo program.
+ * @brief Build the optional similarity-hasher list used by the demo program.
+ * Similarity hashes are metadata only; they are not used for content identity.
  *
- * Fuzzy hashes are metadata only; they are not used for content identity.
- *
- * @return Fuzzy hasher factories for BlobStore, possibly empty.
+ * @return Similarity hasher factories for BlobStore, possibly empty.
  */
-static std::vector<hashing::FuzzyHasherFactory> makeDemoFuzzyHashers() {
-    std::vector<hashing::FuzzyHasherFactory> fuzzyHashers;
+static std::vector<similarity_hashing::SimilarityHasherFactory> makeSimilarityHashers() {
+    std::vector<similarity_hashing::SimilarityHasherFactory> similarityHashers;
 
 #ifdef BLOBSTORE_WITH_SSDEEP
-    fuzzyHashers.push_back(hashing::makeSsdeepFactory());
+    similarityHashers.push_back(similarity_hashing::makeSsdeepFactory());
 #endif
 
-    return fuzzyHashers;
+#ifdef BLOBSTORE_WITH_TLSH
+    similarityHashers.push_back(similarity_hashing::makeTlshFactory());
+#endif
+
+    return similarityHashers;
 }
 
 /**
@@ -107,8 +114,8 @@ int main(int argc, char* argv[]) {
 
         blobstore::BlobStore store(
             "MY_STORE",
-            makeDemoHashers(),
-            makeDemoFuzzyHashers()
+            makeIdentityHashers(),
+            makeSimilarityHashers()
         );
 
         std::cout << "Current working directory: " << fs::current_path() << '\n';
@@ -135,11 +142,11 @@ int main(int argc, char* argv[]) {
                       << '\n';
         }
 
-        for (const auto& fuzzy : result.fuzzyDigests) {
-            std::cout << "Fuzzy digest: "
-                      << fuzzy.algorithm
+        for (const auto& similarity : result.similarityDigests) {
+            std::cout << "Similarity digest: "
+                      << similarity.algorithm
                       << ':'
-                      << fuzzy.signature
+                      << similarity.signature
                       << '\n';
         }
 

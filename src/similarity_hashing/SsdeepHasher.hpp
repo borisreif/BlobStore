@@ -1,13 +1,13 @@
 #pragma once
 
-#include "IFuzzyHasher.hpp"
+#include "ISimilarityHasher.hpp"
 
 #include <cstdint>
 #include <memory>
 #include <span>
 #include <string>
 
-namespace hashing {
+namespace similarity_hashing {
 
 /**
  * @brief ssdeep fuzzy hasher adapter.
@@ -16,7 +16,7 @@ namespace hashing {
  * implements IFuzzyHasher so BlobStore can store an ssdeep signature in
  * META.TXT without using that signature as the canonical blob id.
  */
-class SsdeepHasher final : public IFuzzyHasher {
+class SsdeepHasher final : public ISimilarityHasher {
 public:
     /** @brief Allocate a new ssdeep fuzzy state. */
     SsdeepHasher();
@@ -71,6 +71,6 @@ private:
 };
 
 /** @brief Create a factory that returns fresh ssdeep fuzzy hashers. */
-FuzzyHasherFactory makeSsdeepFactory();
+SimilarityHasherFactory makeSsdeepFactory();
 
-} // namespace hashing
+} // namespace similarity_hashing

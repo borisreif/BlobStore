@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IHasher.hpp"
+#include "IIdentityHasher.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -8,7 +8,7 @@
 #include <span>
 #include <string>
 
-namespace hashing {
+namespace identity_hashing {
 
 /**
  * @brief Streaming BLAKE3 hasher adapted to the IHasher strategy interface.
@@ -17,7 +17,7 @@ namespace hashing {
  * data structures out of this public header. The default digest length is 32
  * bytes, which corresponds to a 256-bit identifier.
  */
-class Blake3Hasher final : public IHasher {
+class Blake3Hasher final : public IIdentityHasher {
 public:
     /**
      * @brief Construct a new BLAKE3 hasher.
@@ -95,6 +95,6 @@ private:
  * @param digestLength Number of output bytes for each created hasher.
  * @return Factory compatible with BlobStore.
  */
-HasherFactory makeBlake3Factory(std::size_t digestLength = 32);
+IdentityHasherFactory makeBlake3Factory(std::size_t digestLength = 32);
 
-} // namespace hashing
+} // namespace identity_hashing

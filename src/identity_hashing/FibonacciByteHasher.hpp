@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IHasher.hpp"
+#include "IIdentityHasher.hpp"
 #include "FibonacciHasher.hpp"
 
 #include <cstdint>
@@ -17,7 +17,7 @@
 // useful for experimentation and testing the hasher interface, not for real
 // content-addressed blob identity.
 
-namespace hashing {
+namespace identity_hashing {
 
 /**
  * @brief Traits template for FibonacciByteHasher word sizes.
@@ -58,7 +58,7 @@ struct FibonacciByteHasherTraits<std::uint64_t> {
  * @tparam UInt `std::uint32_t` or `std::uint64_t` state type.
  */
 template <typename UInt>
-class FibonacciByteHasher final : public IHasher {
+class FibonacciByteHasher final : public IIdentityHasher {
 public:
     static_assert(
         std::is_same_v<UInt, std::uint32_t> ||
@@ -118,4 +118,4 @@ using FibonacciByte32Hasher = FibonacciByteHasher<std::uint32_t>;
 /** @brief Convenient alias for the 64-bit experimental Fibonacci byte hasher. */
 using FibonacciByte64Hasher = FibonacciByteHasher<std::uint64_t>;
 
-} // namespace hashing
+} // namespace identity_hashing

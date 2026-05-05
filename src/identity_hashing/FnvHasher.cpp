@@ -2,30 +2,30 @@
 
 #include <memory>
 
-namespace hashing {
+namespace identity_hashing {
 
-HasherFactory makeFnv1_32Factory() {
+IdentityHasherFactory makeFnv1_32Factory() {
     return [] {
         return std::make_unique<Fnv1_32Hasher>();
     };
 }
 
-HasherFactory makeFnv1_64Factory() {
+IdentityHasherFactory makeFnv1_64Factory() {
     return [] {
         return std::make_unique<Fnv1_64Hasher>();
     };
 }
 
-HasherFactory makeFnv1a_32Factory() {
+IdentityHasherFactory makeFnv1a_32Factory() {
     return [] {
         return std::make_unique<Fnv1a_32Hasher>();
     };
 }
 
-HasherFactory makeFnv1a_64Factory() {
+IdentityHasherFactory makeFnv1a_64Factory() {
     return [] {
         return std::make_unique<Fnv1a_64Hasher>();
     };
 }
 
-} // namespace hashing
+} // namespace identity_hashing

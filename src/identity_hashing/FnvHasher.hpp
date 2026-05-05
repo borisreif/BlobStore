@@ -3,7 +3,7 @@
 #ifndef HASHING_FNV_HASHER_HPP
 #define HASHING_FNV_HASHER_HPP
 
-#include "IHasher.hpp"
+#include "IIdentityHasher.hpp"
 
 #include <cstdint>
 #include <span>
@@ -28,7 +28,7 @@
  * @version 0.0.2
  */
 
-namespace hashing {
+namespace identity_hashing {
 
 /**
  * @brief Selects the byte-mixing order of the FNV algorithm.
@@ -96,7 +96,7 @@ struct FnvTraits<std::uint64_t> {
  * @tparam Variant FNV-1 or FNV-1a byte mixing order.
  */
 template <typename UInt, FnvVariant Variant>
-class FnvHasher final : public IHasher {
+class FnvHasher final : public IIdentityHasher {
 public:
     static_assert(
         std::is_same_v<UInt, std::uint32_t> ||
@@ -154,18 +154,18 @@ using Fnv1a_32Hasher = FnvHasher<std::uint32_t, FnvVariant::Fnv1a>;
 using Fnv1a_64Hasher = FnvHasher<std::uint64_t, FnvVariant::Fnv1a>;
 
 /** @brief Factory for fresh 32-bit FNV-1 hashers. */
-HasherFactory makeFnv1_32Factory();
+IdentityHasherFactory makeFnv1_32Factory();
 
 /** @brief Factory for fresh 64-bit FNV-1 hashers. */
-HasherFactory makeFnv1_64Factory();
+IdentityHasherFactory makeFnv1_64Factory();
 
 /** @brief Factory for fresh 32-bit FNV-1a hashers. */
-HasherFactory makeFnv1a_32Factory();
+IdentityHasherFactory makeFnv1a_32Factory();
 
 /** @brief Factory for fresh 64-bit FNV-1a hashers. */
-HasherFactory makeFnv1a_64Factory();
+IdentityHasherFactory makeFnv1a_64Factory();
 
-} // namespace hashing
+} // namespace identity_hashing
 
 #include "FnvHasher.tpp"
 
