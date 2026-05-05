@@ -2,12 +2,13 @@
 
 #include "../identity_hashing/IIdentityHasher.hpp"
 #include "../similarity_hashing/ISimilarityHasher.hpp"
+#include "BlobErrors.hpp"
+#include "BlobFingerprintGenerator.hpp"
 #include "BlobTypes.hpp"
 
 #include <cstdint>
 #include <filesystem>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -16,47 +17,14 @@ namespace blobstore {
 namespace fs = std::filesystem;
 
 /**
- * @brief Base exception type for BlobStore-specific runtime errors.
- *
- * Catch this type when you want to handle any error raised by the blob-store
- * layer without also catching unrelated standard-library exceptions.
- */
-class BlobStoreError : public std::runtime_error {
-public:
-    /**
-     * @brief Construct an error with a human-readable diagnostic message.
-     * @param message Explanation of the failing blob-store operation.
-     */
-    explicit BlobStoreError(const std::string& message)
-        : std::runtime_error(message) {}
-};
-
-/**
- * @brief Exception raised when a canonical hash path already exists for different bytes.
- *
- * With a strong canonical hash this should be extraordinarily unlikely. In a
- * testing setup using toy hashers such as FNV or multiplicative hashes, this is
- * useful because collisions are much easier to trigger.
- */
-class HashCollisionError : public BlobStoreError {
-public:
-    /**
-     * @brief Construct a collision/integrity error.
-     * @param message Explanation of the detected collision or store inconsistency.
-     */
-    explicit HashCollisionError(const std::string& message)
-        : BlobStoreError(message) {}
-};
-
-/**
  * @brief Database-free content-addressed blob store.
  *
  * BlobStore stores each file under a deterministic path derived from the first
  * exact hasher passed to the constructor. The payload is stored as `DATA.BLB`;
- * exact and fuzzy hashes are stored next to it in `META.TXT`.
+ * exact hashes and similarity signatures are stored next to it in `META.TXT`.
  *
  * The first hasher is the canonical/path hasher. Additional exact hashers are
- * verification metadata. Fuzzy hashers are optional similarity metadata.
+ * verification metadata. Similarity hashers are optional metadata only.
  */
 class BlobStore {
 public:
@@ -64,7 +32,7 @@ public:
      * @brief Construct a blob store rooted at a filesystem directory.
      *
      * @param root Store root. `OBJECTS` and `TMP` directories are created under it.
-     * @param hashers Exact hashers. The first one becomes the canonical path hasher.
+     * @param identityHashers Exact identity hashers. The first one becomes the canonical path hasher.
      * @param similarityHashers Optional similarity hashers used only for metadata.
      * @param pathChunkChars Number of hex characters per directory component.
      *
@@ -152,27 +120,20 @@ private:
     /** @brief Directory used for temporary files before atomic-ish renames. */
     fs::path tmpDir_;
 
-    /** @brief Factories for exact hashers. The first factory is canonical. */
-    std::vector<identity_hashing::IdentityHasherFactory>
-        identityHasherFactories_;
-
-    /** @brief Factories for optional similarity hashers. */
-    std::vector<similarity_hashing::SimilarityHasherFactory>
-        similarityHasherFactories_;
+    /**
+     * @brief Generates byte-derived fingerprints for source files and stored payloads.
+     *
+     * This object owns the configured identity/similarity hasher factories and
+     * performs the streaming hash pass. BlobStore delegates fingerprinting to it
+     * instead of doing hashing itself.
+     */
+    BlobFingerprintGenerator fingerprintGenerator_;
 
     /** @brief Algorithm label of the canonical/path hasher. */
     std::string primaryAlgorithm_;
 
     /** @brief Number of digest hex characters used per path directory component. */
     std::size_t pathChunkChars_;
-
-    /** @brief Create one fresh exact hasher from every configured factory. */
-    std::vector<std::unique_ptr<identity_hashing::IIdentityHasher>>
-    makeIdentityHashers() const;
-
-    /** @brief Create one fresh similarity hasher from every configured factory. */
-    std::vector<std::unique_ptr<similarity_hashing::ISimilarityHasher>>
-    makeSimilarityHashers() const;
 
     /** @brief Convert a canonical hex digest into the object directory path. */
     fs::path objectDirForDigest(const std::string& hexDigest) const;

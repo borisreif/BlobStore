@@ -1,0 +1,56 @@
+[
+{
+  "directory": "/home/boris-a-reif/Dokumente/C++/Blob/build_refactor",
+  "command": "/usr/bin/c++ -DBLAKE3_NO_AVX2 -DBLAKE3_NO_AVX512 -DBLAKE3_NO_SSE2 -DBLAKE3_NO_SSE41 -I/home/boris-a-reif/Dokumente/C++/Blob/src -std=c++20 -Wall -Wextra -Wpedantic -o CMakeFiles/blobstore.dir/src/blobstore/BlobStore.cpp.o -c /home/boris-a-reif/Dokumente/C++/Blob/src/blobstore/BlobStore.cpp",
+  "file": "/home/boris-a-reif/Dokumente/C++/Blob/src/blobstore/BlobStore.cpp",
+  "output": "CMakeFiles/blobstore.dir/src/blobstore/BlobStore.cpp.o"
+},
+{
+  "directory": "/home/boris-a-reif/Dokumente/C++/Blob/build_refactor",
+  "command": "/usr/bin/c++ -DBLAKE3_NO_AVX2 -DBLAKE3_NO_AVX512 -DBLAKE3_NO_SSE2 -DBLAKE3_NO_SSE41 -I/home/boris-a-reif/Dokumente/C++/Blob/src -std=c++20 -Wall -Wextra -Wpedantic -o CMakeFiles/blobstore.dir/src/blobstore/BlobFingerprintGenerator.cpp.o -c /home/boris-a-reif/Dokumente/C++/Blob/src/blobstore/BlobFingerprintGenerator.cpp",
+  "file": "/home/boris-a-reif/Dokumente/C++/Blob/src/blobstore/BlobFingerprintGenerator.cpp",
+  "output": "CMakeFiles/blobstore.dir/src/blobstore/BlobFingerprintGenerator.cpp.o"
+},
+{
+  "directory": "/home/boris-a-reif/Dokumente/C++/Blob/build_refactor",
+  "command": "/usr/bin/c++ -DBLAKE3_NO_AVX2 -DBLAKE3_NO_AVX512 -DBLAKE3_NO_SSE2 -DBLAKE3_NO_SSE41 -I/home/boris-a-reif/Dokumente/C++/Blob/src -std=c++20 -Wall -Wextra -Wpedantic -o CMakeFiles/blobstore.dir/src/identity_hashing/FnvHasher.cpp.o -c /home/boris-a-reif/Dokumente/C++/Blob/src/identity_hashing/FnvHasher.cpp",
+  "file": "/home/boris-a-reif/Dokumente/C++/Blob/src/identity_hashing/FnvHasher.cpp",
+  "output": "CMakeFiles/blobstore.dir/src/identity_hashing/FnvHasher.cpp.o"
+},
+{
+  "directory": "/home/boris-a-reif/Dokumente/C++/Blob/build_refactor",
+  "command": "/usr/bin/c++ -DBLAKE3_NO_AVX2 -DBLAKE3_NO_AVX512 -DBLAKE3_NO_SSE2 -DBLAKE3_NO_SSE41 -I/home/boris-a-reif/Dokumente/C++/Blob/src -std=c++20 -Wall -Wextra -Wpedantic -o CMakeFiles/blobstore.dir/src/identity_hashing/Blake3Hasher.cpp.o -c /home/boris-a-reif/Dokumente/C++/Blob/src/identity_hashing/Blake3Hasher.cpp",
+  "file": "/home/boris-a-reif/Dokumente/C++/Blob/src/identity_hashing/Blake3Hasher.cpp",
+  "output": "CMakeFiles/blobstore.dir/src/identity_hashing/Blake3Hasher.cpp.o"
+},
+{
+  "directory": "/home/boris-a-reif/Dokumente/C++/Blob/build_refactor",
+  "command": "/usr/bin/cc -DBLAKE3_NO_AVX2 -DBLAKE3_NO_AVX512 -DBLAKE3_NO_SSE2 -DBLAKE3_NO_SSE41 -I/home/boris-a-reif/Dokumente/C++/Blob/src -Wall -Wextra -Wpedantic -o CMakeFiles/blobstore.dir/src/thirdparty/blake3/blake3.c.o -c /home/boris-a-reif/Dokumente/C++/Blob/src/thirdparty/blake3/blake3.c",
+  "file": "/home/boris-a-reif/Dokumente/C++/Blob/src/thirdparty/blake3/blake3.c",
+  "output": "CMakeFiles/blobstore.dir/src/thirdparty/blake3/blake3.c.o"
+},
+{
+  "directory": "/home/boris-a-reif/Dokumente/C++/Blob/build_refactor",
+  "command": "/usr/bin/cc -DBLAKE3_NO_AVX2 -DBLAKE3_NO_AVX512 -DBLAKE3_NO_SSE2 -DBLAKE3_NO_SSE41 -I/home/boris-a-reif/Dokumente/C++/Blob/src -Wall -Wextra -Wpedantic -o CMakeFiles/blobstore.dir/src/thirdparty/blake3/blake3_dispatch.c.o -c /home/boris-a-reif/Dokumente/C++/Blob/src/thirdparty/blake3/blake3_dispatch.c",
+  "file": "/home/boris-a-reif/Dokumente/C++/Blob/src/thirdparty/blake3/blake3_dispatch.c",
+  "output": "CMakeFiles/blobstore.dir/src/thirdparty/blake3/blake3_dispatch.c.o"
+},
+{
+  "directory": "/home/boris-a-reif/Dokumente/C++/Blob/build_refactor",
+  "command": "/usr/bin/cc -DBLAKE3_NO_AVX2 -DBLAKE3_NO_AVX512 -DBLAKE3_NO_SSE2 -DBLAKE3_NO_SSE41 -I/home/boris-a-reif/Dokumente/C++/Blob/src -Wall -Wextra -Wpedantic -o CMakeFiles/blobstore.dir/src/thirdparty/blake3/blake3_portable.c.o -c /home/boris-a-reif/Dokumente/C++/Blob/src/thirdparty/blake3/blake3_portable.c",
+  "file": "/home/boris-a-reif/Dokumente/C++/Blob/src/thirdparty/blake3/blake3_portable.c",
+  "output": "CMakeFiles/blobstore.dir/src/thirdparty/blake3/blake3_portable.c.o"
+},
+{
+  "directory": "/home/boris-a-reif/Dokumente/C++/Blob/build_refactor",
+  "command": "/usr/bin/c++ -DBLAKE3_NO_AVX2 -DBLAKE3_NO_AVX512 -DBLAKE3_NO_SSE2 -DBLAKE3_NO_SSE41 -I/home/boris-a-reif/Dokumente/C++/Blob/src -std=c++20 -Wall -Wextra -Wpedantic -o CMakeFiles/blobstore.dir/src/identity_hashing/Sha256OpenSSLHasher.cpp.o -c /home/boris-a-reif/Dokumente/C++/Blob/src/identity_hashing/Sha256OpenSSLHasher.cpp",
+  "file": "/home/boris-a-reif/Dokumente/C++/Blob/src/identity_hashing/Sha256OpenSSLHasher.cpp",
+  "output": "CMakeFiles/blobstore.dir/src/identity_hashing/Sha256OpenSSLHasher.cpp.o"
+},
+{
+  "directory": "/home/boris-a-reif/Dokumente/C++/Blob/build_refactor",
+  "command": "/usr/bin/c++ -DBLOBSTORE_WITH_BLAKE3 -DBLOBSTORE_WITH_OPENSSL -I/home/boris-a-reif/Dokumente/C++/Blob/src -std=c++20 -Wall -Wextra -Wpedantic -o CMakeFiles/blob.dir/src/main.cpp.o -c /home/boris-a-reif/Dokumente/C++/Blob/src/main.cpp",
+  "file": "/home/boris-a-reif/Dokumente/C++/Blob/src/main.cpp",
+  "output": "CMakeFiles/blob.dir/src/main.cpp.o"
+}
+]

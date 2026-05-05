@@ -14,6 +14,7 @@ option(BLOBSTORE_WITH_TLSH "Build the optional TLSH similarity hasher" OFF)
 
 add_library(blobstore
     src/blobstore/BlobStore.cpp
+    src/blobstore/BlobFingerprintGenerator.cpp
     src/identity_hashing/FnvHasher.cpp
 )
 

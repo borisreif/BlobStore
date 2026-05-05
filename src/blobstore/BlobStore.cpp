@@ -5,7 +5,6 @@
 #include <fstream>
 #include <iomanip>
 #include <random>
-#include <span>
 #include <sstream>
 #include <system_error>
 #include <unordered_map>
@@ -35,143 +34,28 @@ BlobStore::BlobStore(
     : root_(std::move(root)),
       objectsDir_(root_ / "OBJECTS"),
       tmpDir_(root_ / "TMP"),
-      identityHasherFactories_(std::move(identityHashers)),
-      similarityHasherFactories_(std::move(similarityHashers)),
+      fingerprintGenerator_(
+          std::move(identityHashers),
+          std::move(similarityHashers)
+      ),
+      primaryAlgorithm_(fingerprintGenerator_.primaryAlgorithm()),
       pathChunkChars_(pathChunkChars)
 {
-    if (identityHasherFactories_.empty()) {
-        throw BlobStoreError("BlobStore needs at least one exact hasher");
-    }
-
     if (pathChunkChars_ == 0 || pathChunkChars_ > 8) {
         throw BlobStoreError("pathChunkChars should be between 1 and 8");
     }
-
-    auto primaryHasher = identityHasherFactories_.front()();
-    if (!primaryHasher) {
-        throw BlobStoreError("Primary hasher factory returned nullptr");
-    }
-
-    primaryAlgorithm_ = primaryHasher->algorithm();
 
     fs::create_directories(objectsDir_);
     fs::create_directories(tmpDir_);
 }
 
-std::vector<std::unique_ptr<identity_hashing::IIdentityHasher>> BlobStore::makeIdentityHashers() const {
-    std::vector<std::unique_ptr<identity_hashing::IIdentityHasher>> result;
-    result.reserve(identityHasherFactories_.size());
-
-    for (const auto& factory : identityHasherFactories_) {
-        auto hasher = factory();
-        if (!hasher) {
-            throw BlobStoreError("Identity hasher factory returned nullptr");
-        }
-        result.push_back(std::move(hasher));
-    }
-
-    return result;
-}
-
-std::vector<std::unique_ptr<similarity_hashing::ISimilarityHasher>> BlobStore::makeSimilarityHashers() const {
-    std::vector<std::unique_ptr<similarity_hashing::ISimilarityHasher>> result;
-    result.reserve(similarityHasherFactories_.size());
-
-    for (const auto& factory : similarityHasherFactories_) {
-        auto hasher = factory();
-        if (!hasher) {
-            throw BlobStoreError("Similarity hasher factory returned nullptr");
-        }
-        result.push_back(std::move(hasher));
-    }
-
-    return result;
-}
-
 PutResult BlobStore::putFile(const fs::path& sourcePath) {
-    if (!fs::exists(sourcePath)) {
-        throw BlobStoreError("Source file does not exist: " + sourcePath.string());
-    }
-
-    if (!fs::is_regular_file(sourcePath)) {
-        throw BlobStoreError("Source path is not a regular file: " + sourcePath.string());
-    }
-
-    auto hashers = makeIdentityHashers();
-    auto similarityHashers = makeSimilarityHashers();
-
     fs::path tmpPath = makeTempPath();
 
-    std::ifstream in(sourcePath, std::ios::binary);
-    if (!in) {
-        throw BlobStoreError("Could not open source file: " + sourcePath.string());
-    }
+    BlobFingerprint fingerprint =
+        fingerprintGenerator_.generateForFileAndCopyTo(sourcePath, tmpPath);
 
-    std::ofstream out(tmpPath, std::ios::binary | std::ios::trunc);
-    if (!out) {
-        throw BlobStoreError("Could not create temporary file: " + tmpPath.string());
-    }
-
-    std::vector<std::uint8_t> buffer(DefaultIoChunkSize);
-    std::uintmax_t totalSize = 0;
-
-    while (in) {
-        in.read(
-            reinterpret_cast<char*>(buffer.data()),
-            static_cast<std::streamsize>(buffer.size())
-        );
-
-        std::streamsize got = in.gcount();
-
-        if (got > 0) {
-            auto n = static_cast<std::size_t>(got);
-            std::span<const std::uint8_t> chunk(buffer.data(), n);
-
-            for (auto& hasher : hashers) {
-                hasher->update(chunk);
-            }
-
-            for (auto& similarityHasher : similarityHashers) {
-                similarityHasher->update(chunk);
-            }
-
-            out.write(
-                reinterpret_cast<const char*>(buffer.data()),
-                got
-            );
-
-            totalSize += static_cast<std::uintmax_t>(got);
-        }
-    }
-
-    out.close();
-
-    if (!out) {
-        fs::remove(tmpPath);
-        throw BlobStoreError("Failed while writing temporary file");
-    }
-
-    std::vector<HashDigest> digests;
-    digests.reserve(hashers.size());
-
-    for (auto& hasher : hashers) {
-        digests.push_back(HashDigest{
-            hasher->algorithm(),
-            normalizeHex(hasher->finalHex())
-        });
-    }
-
-    std::vector<SimilarityDigest> similarityDigests;
-    similarityDigests.reserve(similarityHashers.size());
-
-    for (auto& similarityHasher : similarityHashers) {
-        similarityDigests.push_back(SimilarityDigest{
-            similarityHasher->algorithm(),
-            similarityHasher->finalSignature()
-        });
-    }
-
-    const HashDigest& primary = digests.front();
+    const HashDigest& primary = fingerprint.primaryDigest();
 
     fs::path objectDir = objectDirForDigest(primary.hex);
     fs::path dataPath = objectDir / "DATA.BLB";
@@ -188,8 +72,8 @@ PutResult BlobStore::putFile(const fs::path& sourcePath) {
                 BlobId{primary.algorithm, primary.hex},
                 true,
                 dataPath,
-                digests,
-                similarityDigests
+                fingerprint.identityDigests,
+                fingerprint.similarityDigests
             };
         }
 
@@ -200,14 +84,14 @@ PutResult BlobStore::putFile(const fs::path& sourcePath) {
 
     fs::rename(tmpPath, dataPath);
 
-    writeMeta(primary.hex, totalSize, digests, similarityDigests);
+    writeMeta(primary.hex, fingerprint.size, fingerprint.identityDigests, fingerprint.similarityDigests);
 
     return PutResult{
         BlobId{primary.algorithm, primary.hex},
         false,
         dataPath,
-        digests,
-        similarityDigests
+        fingerprint.identityDigests,
+        fingerprint.similarityDigests
     };
 }
 
@@ -236,36 +120,11 @@ bool BlobStore::verify(const BlobId& id) const {
         expected[digest.algorithm] = normalizeHex(digest.hex);
     }
 
-    auto hashers = makeIdentityHashers();
+    const BlobFingerprint fingerprint = fingerprintGenerator_.generateForFile(dataPath);
 
-    std::ifstream in(dataPath, std::ios::binary);
-    if (!in) {
-        return false;
-    }
-
-    std::vector<std::uint8_t> buffer(DefaultIoChunkSize);
-
-    while (in) {
-        in.read(
-            reinterpret_cast<char*>(buffer.data()),
-            static_cast<std::streamsize>(buffer.size())
-        );
-
-        std::streamsize got = in.gcount();
-
-        if (got > 0) {
-            auto n = static_cast<std::size_t>(got);
-            std::span<const std::uint8_t> chunk(buffer.data(), n);
-
-            for (auto& hasher : hashers) {
-                hasher->update(chunk);
-            }
-        }
-    }
-
-    for (auto& hasher : hashers) {
-        std::string algorithm = hasher->algorithm();
-        std::string actual = normalizeHex(hasher->finalHex());
+    for (const auto& digest : fingerprint.identityDigests) {
+        std::string algorithm = digest.algorithm;
+        std::string actual = normalizeHex(digest.hex);
 
         auto it = expected.find(algorithm);
 

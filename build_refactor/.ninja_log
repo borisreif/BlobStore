@@ -1,0 +1,12 @@
+# ninja log v5
+2	27	1777987645466169530	CMakeFiles/blobstore.dir/src/thirdparty/blake3/blake3_dispatch.c.o	23615adbc459ee20
+2	110	1777987645549169572	CMakeFiles/blobstore.dir/src/thirdparty/blake3/blake3.c.o	dc9c88feb5417161
+3	283	1777987645722169658	CMakeFiles/blobstore.dir/src/thirdparty/blake3/blake3_portable.c.o	e5829f8047920d2d
+2	759	1777987646197169897	CMakeFiles/blobstore.dir/src/identity_hashing/Blake3Hasher.cpp.o	40a78275db370bed
+3	760	1777987646197169897	CMakeFiles/blobstore.dir/src/identity_hashing/Sha256OpenSSLHasher.cpp.o	c816ac877cb56d4
+2	809	1777987646248169922	CMakeFiles/blobstore.dir/src/identity_hashing/FnvHasher.cpp.o	97f563b0329ce9e2
+3	895	1777987646333169965	CMakeFiles/blob.dir/src/main.cpp.o	8422682ef1000234
+1	1052	1777987646490170044	CMakeFiles/blobstore.dir/src/blobstore/BlobFingerprintGenerator.cpp.o	3af849f5cd2f9cd6
+1	1513	1777987646951170275	CMakeFiles/blobstore.dir/src/blobstore/BlobStore.cpp.o	8d377965c8bdb18f
+1513	1588	1777987647023265190	libblobstore.a	d599dd74ee5681ab
+1588	1685	1777987647123246174	blob	cfabf9439f26422f

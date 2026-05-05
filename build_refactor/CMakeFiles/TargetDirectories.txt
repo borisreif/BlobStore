@@ -1,0 +1,4 @@
+/home/boris-a-reif/Dokumente/C++/Blob/build_refactor/CMakeFiles/blobstore.dir
+/home/boris-a-reif/Dokumente/C++/Blob/build_refactor/CMakeFiles/blob.dir
+/home/boris-a-reif/Dokumente/C++/Blob/build_refactor/CMakeFiles/edit_cache.dir
+/home/boris-a-reif/Dokumente/C++/Blob/build_refactor/CMakeFiles/rebuild_cache.dir
