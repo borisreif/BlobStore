@@ -6,7 +6,7 @@
 #include <vector>
 
 extern "C" {
-#include "../third_party/blake3/blake3.h"
+#include "../thirdparty/blake3/blake3.h"
 }
 
 namespace hashing {

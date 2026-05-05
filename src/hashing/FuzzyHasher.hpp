@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../meta_hashing/IFuzzyHasher.hpp"
+#include "../metahashing/IFuzzyHasher.hpp"
 
-#include <string>
+// #include <string>
 
 /**
  * The Fuzzy hash function
@@ -13,7 +13,7 @@
  *
  * This header used to contain an experimental, unfinished FuzzyHasher class.
  * The project now keeps fuzzy hashing separate from exact hashing through the
- * IFuzzyHasher interface in `src/meta_hashing/IFuzzyHasher.hpp`.
+ * IFuzzyHasher interface in `src/metahashing/IFuzzyHasher.hpp`.
  *
  * Exact hashers implement `IHasher` and return hexadecimal digests.
  * Fuzzy hashers implement `IFuzzyHasher` and return algorithm-specific

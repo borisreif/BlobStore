@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../hashing/IHasher.hpp"
-#include "../meta_hashing/IFuzzyHasher.hpp"
+#include "../metahashing/IFuzzyHasher.hpp"
 #include "BlobTypes.hpp"
 
 #include <cstdint>

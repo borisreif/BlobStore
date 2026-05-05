@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(BlobStorePrototype VERSION 0.2.0 LANGUAGES C CXX)
+project(BlobStorePrototype VERSION 0.3.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -8,7 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(BLOBSTORE_WITH_OPENSSL "Build the OpenSSL SHA-256 hasher" ON)
-option(BLOBSTORE_WITH_BLAKE3 "Build the vendored portable BLAKE3 hasher" OFF)
+option(BLOBSTORE_WITH_BLAKE3 "Build the vendored portable BLAKE3 hasher" ON)
 option(BLOBSTORE_WITH_SSDEEP "Build the optional ssdeep fuzzy hasher" OFF)
 
 add_library(blobstore
@@ -24,19 +24,30 @@ target_include_directories(blobstore
 target_compile_features(blobstore PUBLIC cxx_std_20)
 
 if(BLOBSTORE_WITH_BLAKE3)
-    file(READ ${CMAKE_CURRENT_SOURCE_DIR}/src/third_party/blake3/blake3.h BLAKE3_HEADER_PREVIEW LIMIT 4096)
-    if(BLAKE3_HEADER_PREVIEW MATCHES "<!DOCTYPE html")
-        message(FATAL_ERROR "The vendored BLAKE3 files look like GitHub HTML pages, not raw source files. Re-download the raw files from raw.githubusercontent.com or leave BLOBSTORE_WITH_BLAKE3=OFF.")
-    endif()
+    foreach(BLAKE3_FILE
+        blake3.h
+        blake3_impl.h
+        blake3.c
+        blake3_dispatch.c
+        blake3_portable.c
+    )
+        set(BLAKE3_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src/thirdparty/blake3/${BLAKE3_FILE})
+        if(NOT EXISTS ${BLAKE3_PATH})
+            message(FATAL_ERROR "Missing vendored BLAKE3 file: ${BLAKE3_PATH}")
+        endif()
+        file(READ ${BLAKE3_PATH} BLAKE3_PREVIEW LIMIT 512)
+        if(BLAKE3_PREVIEW MATCHES "<!DOCTYPE html")
+            message(FATAL_ERROR "${BLAKE3_PATH} looks like a GitHub HTML page, not raw source. Download the raw BLAKE3 C file instead.")
+        endif()
+    endforeach()
+
     target_sources(blobstore PRIVATE
         src/hashing/Blake3Hasher.cpp
-        src/third_party/blake3/blake3.c
-        src/third_party/blake3/blake3_dispatch.c
-        src/third_party/blake3/blake3_portable.c
+        src/thirdparty/blake3/blake3.c
+        src/thirdparty/blake3/blake3_dispatch.c
+        src/thirdparty/blake3/blake3_portable.c
     )
 
-    # Keep the first BLAKE3 integration portable and simple. SIMD files can be
-    # added later when the storage design is stable.
     target_compile_definitions(blobstore PRIVATE
         BLAKE3_NO_SSE2
         BLAKE3_NO_SSE41
@@ -62,14 +73,26 @@ if(BLOBSTORE_WITH_SSDEEP)
     endif()
 
     target_sources(blobstore PRIVATE
-        src/meta_hashing/SsdeepHasher.cpp
+        src/metahashing/SsdeepHasher.cpp
     )
     target_include_directories(blobstore PRIVATE ${FUZZY_INCLUDE_DIR})
     target_link_libraries(blobstore PUBLIC ${FUZZY_LIBRARY})
 endif()
 
-add_executable(blob main.cpp)
+add_executable(blob src/main.cpp)
 target_link_libraries(blob PRIVATE blobstore)
+
+if(BLOBSTORE_WITH_BLAKE3)
+    target_compile_definitions(blob PRIVATE BLOBSTORE_WITH_BLAKE3)
+endif()
+
+if(BLOBSTORE_WITH_OPENSSL)
+    target_compile_definitions(blob PRIVATE BLOBSTORE_WITH_OPENSSL)
+endif()
+
+if(BLOBSTORE_WITH_SSDEEP)
+    target_compile_definitions(blob PRIVATE BLOBSTORE_WITH_SSDEEP)
+endif()
 
 if(MSVC)
     target_compile_options(blobstore PRIVATE /W4)

@@ -8,6 +8,7 @@
       "args": [
         "-S", "${workspaceFolder}",
         "-B", "${workspaceFolder}/build",
+        "-G", "Ninja",
         "-DCMAKE_BUILD_TYPE=Debug"
       ],
       "problemMatcher": []
@@ -17,8 +18,7 @@
       "type": "shell",
       "command": "cmake",
       "args": [
-        "--build", "${workspaceFolder}/build",
-        "--config", "Debug"
+        "--build", "${workspaceFolder}/build"
       ],
       "dependsOn": "CMake: configure",
       "group": {

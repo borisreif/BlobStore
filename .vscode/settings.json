@@ -1,15 +1,20 @@
 {
   "C_Cpp.default.cppStandard": "c++20",
+  "C_Cpp.default.intelliSenseMode": "linux-gcc-x64",
   "C_Cpp.default.cStandard": "c23",
   "C_Cpp.default.includePath": [
-    "${workspaceFolder}/include",
     "${workspaceFolder}/src"
   ],
   "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
+  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
   "C_Cpp.default.compilerPath": "/usr/bin/g++",
   "C_Cpp.errorSquiggles": "enabled",
   "cmake.configureOnOpen": true,
   "cmake.buildDirectory": "${workspaceFolder}/build",
+  "cmake.generator": "Ninja",
+  "clangd.arguments": [
+    "--compile-commands-dir=${workspaceFolder}/build"
+  ],
   "files.associations": {
     "*.tpp": "cpp",
     "*.ipp": "cpp",
@@ -26,3 +31,10 @@
     "**/legacy": true
   }
 }
+
+
+
+ 
+
+
+
